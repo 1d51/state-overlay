@@ -1,0 +1,15 @@
+{
+	"data": [{
+		"name": "overlayFileName",
+		"mode": "append",
+		"conditions": [{
+			"inclusive": true,
+			"type": "actor",
+			"id": 1
+			
+		}]
+	}],
+	"factors": {
+		"ActorName": 1
+	}
+}
