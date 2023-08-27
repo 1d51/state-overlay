@@ -1,5 +1,6 @@
 {
 	"data": [{
+		"priority": 0,
 		"name": "overlayFileName",
 		"mode": "append",
 		"conditions": [{

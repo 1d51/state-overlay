@@ -1,6 +1,6 @@
 /*:
  * @author 1d51
- * @version 0.0.1
+ * @version 0.0.2
  * @plugindesc Use custom overlays based on actor states
  * @help
  * ============================================================================
@@ -44,11 +44,16 @@ StateOverlay.Holders = StateOverlay.Holders || {};
     $.findOverlays = function (faceName) {
         const actor = $.findActor(faceName);
         if (actor == null) return [[], [], false];
-
         const data = $.readConfig()["data"];
-        const prepend = [];
-        const append = [];
 
+        data.sort((a, b) => {
+            if (a["priority"] == null) return 1;
+            if (b["priority"] == null) return -1;
+            return a["priority"] - b["priority"];
+        });
+
+        const append = [];
+        const prepend = [];
         let replace = false;
         for (let i = 0; i < data.length; i++) {
             const mode = data[i]["mode"] || "replace";
