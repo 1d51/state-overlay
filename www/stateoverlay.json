@@ -1,5 +1,5 @@
 {
-	"data": [{
+	"inputs": [{
 		"priority": 0,
 		"name": "overlayFileName",
 		"mode": "append",

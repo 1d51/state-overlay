@@ -1,6 +1,6 @@
 /*:
  * @author 1d51
- * @version 0.0.2
+ * @version 0.0.3
  * @plugindesc Use custom overlays based on actor states
  * @help
  * ============================================================================
@@ -44,9 +44,9 @@ StateOverlay.Holders = StateOverlay.Holders || {};
     $.findOverlays = function (faceName) {
         const actor = $.findActor(faceName);
         if (actor == null) return [[], [], false];
-        const data = $.readConfig()["data"];
+        const inputs = $.readConfig()["inputs"];
 
-        data.sort((a, b) => {
+        inputs.sort((a, b) => {
             if (a["priority"] == null) return 1;
             if (b["priority"] == null) return -1;
             return a["priority"] - b["priority"];
@@ -55,10 +55,10 @@ StateOverlay.Holders = StateOverlay.Holders || {};
         const append = [];
         const prepend = [];
         let replace = false;
-        for (let i = 0; i < data.length; i++) {
-            const mode = data[i]["mode"] || "replace";
-            const conditions = data[i]["conditions"];
-            const name = data[i]["name"];
+        for (let i = 0; i < inputs.length; i++) {
+            const mode = inputs[i]["mode"] || "replace";
+            const conditions = inputs[i]["conditions"];
+            const name = inputs[i]["name"];
 
             const allowed = conditions.every(condition => {
                 const inclusive = condition["inclusive"] || true;
@@ -111,7 +111,7 @@ StateOverlay.Holders = StateOverlay.Holders || {};
             return JSON.parse(file);
         } else {
             return {
-                "data": [],
+                "inputs": [],
                 "factors": {}
             };
         }
