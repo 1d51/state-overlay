@@ -1,6 +1,6 @@
 /*:
  * @author 1d51
- * @version 0.0.3
+ * @version 0.0.4
  * @plugindesc Use custom overlays based on actor states
  * @help
  * ============================================================================
@@ -66,7 +66,8 @@ StateOverlay.Holders = StateOverlay.Holders || {};
                 const id = condition["id"];
 
                 let response = false;
-                if (type === "actor") response = id === actor._actorId;
+                if (type === "switch") response = $gameSwitches.value(id);
+                else if (type === "actor") response = id === actor._actorId;
                 else if (type === "class") response = actor.isClass($dataClasses[id]);
                 else if (type === "skill") response = actor.hasSkill(id);
                 else if (type === "armor") response = actor.hasArmor($dataArmors[id]);
