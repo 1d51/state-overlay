@@ -1,6 +1,6 @@
 /*:
  * @author 1d51
- * @version 0.0.4
+ * @version 0.0.5
  * @plugindesc Use custom overlays based on actor states
  * @help
  * ============================================================================
@@ -61,7 +61,8 @@ StateOverlay.Holders = StateOverlay.Holders || {};
             const name = inputs[i]["name"];
 
             const allowed = conditions.every(condition => {
-                const inclusive = condition["inclusive"] || true;
+                let inclusive = condition["inclusive"];
+                if (inclusive == null) inclusive = true;
                 const type = condition["type"] || "state";
                 const id = condition["id"];
 
