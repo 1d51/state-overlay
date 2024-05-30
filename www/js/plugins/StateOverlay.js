@@ -1,6 +1,6 @@
 /*:
  * @author 1d51
- * @version 0.0.5
+ * @version 0.0.6
  * @plugindesc Use custom overlays based on actor states
  * @help
  * ============================================================================
@@ -41,8 +41,7 @@ StateOverlay.Holders = StateOverlay.Holders || {};
 
     $.Params.root = $.Helpers.createPath("");
 
-    $.findOverlays = function (faceName) {
-        const actor = $.findActor(faceName);
+    $.findOverlays = function (actor) {
         if (actor == null) return [[], [], false];
         const inputs = $.readConfig()["inputs"];
 
@@ -58,12 +57,11 @@ StateOverlay.Holders = StateOverlay.Holders || {};
         for (let i = 0; i < inputs.length; i++) {
             const mode = inputs[i]["mode"] || "replace";
             const conditions = inputs[i]["conditions"];
-            const name = inputs[i]["name"];
-
             const allowed = conditions.every(condition => {
                 let inclusive = condition["inclusive"];
                 if (inclusive == null) inclusive = true;
                 const type = condition["type"] || "state";
+                const text = condition["text"];
                 const id = condition["id"];
 
                 let response = false;
@@ -74,16 +72,17 @@ StateOverlay.Holders = StateOverlay.Holders || {};
                 else if (type === "armor") response = actor.hasArmor($dataArmors[id]);
                 else if (type === "weapon") response = actor.hasWeapon($dataArmors[id]);
                 else if (type === "state") response = actor.isStateAffected(id);
+                else if (type === "contains") response = actor.faceName().includes(text);
                 return inclusive ? response : !response;
             });
 
             if (allowed) {
                 if (mode === "prepend") {
-                    prepend.push(name);
+                    prepend.push(inputs[i]);
                 } else if (mode === "append") {
-                    append.push(name);
+                    append.push(inputs[i]);
                 } else if (mode === "replace") {
-                    append.push(name);
+                    append.push(inputs[i]);
                     replace = true;
                 }
             }
@@ -123,30 +122,48 @@ StateOverlay.Holders = StateOverlay.Holders || {};
 
     $.Holders.drawFace = Window_Base.prototype.drawFace;
     Window_Base.prototype.drawFace = function (faceName, faceIndex, x, y, width, height) {
-        const overlays = StateOverlay.findOverlays(faceName);
+        const actor = StateOverlay.findActor(faceName);
+        const overlays = StateOverlay.findOverlays(actor);
         for (let i = 0; i < overlays[0].length; i++) {
-            $.Holders.drawFace.call(this, overlays[0][i], faceIndex, x, y, width, height);
+            const dxf = actor._actorId - 1 < overlays[0][i]["dxf"].length
+                ? overlays[0][i]["dxf"][actor._actorId - 1] : 0;
+            const dyf = actor._actorId - 1 < overlays[0][i]["dyf"].length
+                ? overlays[0][i]["dyf"][actor._actorId - 1] : 0;
+            $.Holders.drawFace.call(this, overlays[0][i]["name"], faceIndex, x + dxf, y + dyf, width, height);
         }
         if (!overlays[2]) {
             $.Holders.drawFace.call(this, faceName, faceIndex, x, y, width, height);
         }
         for (let i = 0; i < overlays[1].length; i++) {
-            $.Holders.drawFace.call(this, overlays[1][i], faceIndex, x, y, width, height);
+            const dxf = actor._actorId - 1 < overlays[1][i]["dxf"].length
+                ? overlays[1][i]["dxf"][actor._actorId - 1] : 0;
+            const dyf = actor._actorId - 1 < overlays[1][i]["dyf"].length
+                ? overlays[1][i]["dyf"][actor._actorId - 1] : 0;
+            $.Holders.drawFace.call(this, overlays[1][i]["name"], faceIndex, x + dxf, y + dyf, width, height);
         }
     };
 
     if (Imported.YEP_SaveCore) {
         $.Holders.saveDrawFace = Window_SaveInfo.prototype.drawFace;
         Window_SaveInfo.prototype.drawFace = function(name, index, x, y, w, h) {
-            const overlays = StateOverlay.findOverlays(name);
+            const actor = StateOverlay.findActor(name);
+            const overlays = StateOverlay.findOverlays(actor);
             for (let i = 0; i < overlays[0].length; i++) {
-                $.Holders.saveDrawFace.call(this, overlays[0][i], index, x, y, w, h);
+                const dxf = actor._actorId - 1 < overlays[0][i]["dxf"].length
+                    ? overlays[0][i]["dxf"][actor._actorId - 1] : 0;
+                const dyf = actor._actorId - 1 < overlays[0][i]["dyf"].length
+                    ? overlays[0][i]["dyf"][actor._actorId - 1] : 0;
+                $.Holders.saveDrawFace.call(this, overlays[0][i]["name"], index, x + dxf, y + dyf, w, h);
             }
             if (!overlays[2]) {
                 $.Holders.saveDrawFace.call(this, name, index, x, y, w, h);
             }
             for (let i = 0; i < overlays[1].length; i++) {
-                $.Holders.saveDrawFace.call(this, overlays[1][i], index, x, y, w, h);
+                const dxf = actor._actorId - 1 < overlays[1][i]["dxf"].length
+                    ? overlays[1][i]["dxf"][actor._actorId - 1] : 0;
+                const dyf = actor._actorId - 1 < overlays[1][i]["dyf"].length
+                    ? overlays[1][i]["dyf"][actor._actorId - 1] : 0;
+                $.Holders.saveDrawFace.call(this, overlays[1][i]["name"], index, x + dxf, y + dyf, w, h);
             }
         };
     }
@@ -154,15 +171,24 @@ StateOverlay.Holders = StateOverlay.Holders || {};
     if (Imported.YEP_BattleStatusWindow) {
         $.Holders.battleDrawFace = Window_BattleStatus.prototype.drawFace;
         Window_BattleStatus.prototype.drawFace = function(fn, fi, x, y, width, height) {
-            const overlays = StateOverlay.findOverlays(fn);
+            const actor = StateOverlay.findActor(fn);
+            const overlays = StateOverlay.findOverlays(actor);
             for (let i = 0; i < overlays[0].length; i++) {
-                $.Holders.battleDrawFace.call(this, overlays[0][i], fi, x, y, width, height);
+                const dxf = actor._actorId - 1 < overlays[0][i]["dxf"].length
+                    ? overlays[0][i]["dxf"][actor._actorId - 1] : 0;
+                const dyf = actor._actorId - 1 < overlays[0][i]["dyf"].length
+                    ? overlays[0][i]["dyf"][actor._actorId - 1] : 0;
+                $.Holders.battleDrawFace.call(this, overlays[0][i]["name"], fi, x + dxf, y + dyf, width, height);
             }
             if (!overlays[2]) {
                 $.Holders.battleDrawFace.call(this, fn, fi, x, y, width, height);
             }
             for (let i = 0; i < overlays[1].length; i++) {
-                $.Holders.battleDrawFace.call(this, overlays[1][i], fi, x, y, width, height);
+                const dxf = actor._actorId - 1 < overlays[1][i]["dxf"].length
+                    ? overlays[1][i]["dxf"][actor._actorId - 1] : 0;
+                const dyf = actor._actorId - 1 < overlays[1][i]["dyf"].length
+                    ? overlays[1][i]["dyf"][actor._actorId - 1] : 0;
+                $.Holders.battleDrawFace.call(this, overlays[1][i]["name"], fi, x + dxf, y + dyf, width, height);
             }
         };
     }
@@ -170,15 +196,24 @@ StateOverlay.Holders = StateOverlay.Holders || {};
     if (Imported.Galv_BustMenu) {
         $.Holders.bustDrawFace = Window_MenuStatus.prototype.drawFace;
         Window_MenuStatus.prototype.drawFace = function (faceName, faceIndex, x, y, width, height) {
-            const overlays = StateOverlay.findOverlays(faceName);
+            const actor = StateOverlay.findActor(faceName);
+            const overlays = StateOverlay.findOverlays(actor);
             for (let i = 0; i < overlays[0].length; i++) {
-                $.Holders.bustDrawFace.call(this, overlays[0][i], faceIndex, x, y, width, height);
+                const dxp = actor._actorId - 1 < overlays[0][i]["dxp"].length
+                    ? overlays[0][i]["dxp"][actor._actorId - 1] : 0;
+                const dyp = actor._actorId - 1 < overlays[0][i]["dyp"].length
+                    ? overlays[0][i]["dyp"][actor._actorId - 1] : 0;
+                $.Holders.bustDrawFace.call(this, overlays[0][i]["name"], faceIndex, x + dxp, y + dyp, width, height);
             }
             if (!overlays[2]) {
                 $.Holders.bustDrawFace.call(this, faceName, faceIndex, x, y, width, height);
             }
             for (let i = 0; i < overlays[1].length; i++) {
-                $.Holders.bustDrawFace.call(this, overlays[1][i], faceIndex, x, y, width, height);
+                const dxp = actor._actorId - 1 < overlays[1][i]["dxp"].length
+                    ? overlays[1][i]["dxp"][actor._actorId - 1] : 0;
+                const dyp = actor._actorId - 1 < overlays[1][i]["dyp"].length
+                    ? overlays[1][i]["dyp"][actor._actorId - 1] : 0;
+                $.Holders.bustDrawFace.call(this, overlays[1][i]["name"], faceIndex, x + dxp, y + dyp, width, height);
             }
         };
     }
