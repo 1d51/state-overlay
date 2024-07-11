@@ -1,6 +1,6 @@
 /*:
  * @author 1d51
- * @version 0.0.7
+ * @version 0.0.8
  * @plugindesc Use custom overlays based on actor states
  * @help
  * ============================================================================
@@ -136,22 +136,6 @@ StateOverlay.Holders = StateOverlay.Holders || {};
                 actor._actorId - 1 < object["dyp"].length
             ? object["dyp"][actor._actorId - 1] : 0;
 
-        const xf = object["xf"] != null &&
-                actor._actorId - 1 < object["xf"].length
-            ? object["xf"][actor._actorId - 1] : 0;
-
-        const yf = object["yf"] != null &&
-                actor._actorId - 1 < object["yf"].length
-            ? object["yf"][actor._actorId - 1] : 0;
-
-        const xp = object["xp"] != null &&
-                actor._actorId - 1 < object["xp"].length
-            ? object["xp"][actor._actorId - 1] : 0;
-
-        const yp = object["yp"] != null &&
-                actor._actorId - 1 < object["yp"].length
-            ? object["yp"][actor._actorId - 1] : 0;
-
         const wf = object["wf"] != null &&
                 actor._actorId - 1 < object["wf"].length
             ? object["wf"][actor._actorId - 1] : 0;
@@ -168,23 +152,26 @@ StateOverlay.Holders = StateOverlay.Holders || {};
                 actor._actorId - 1 < object["hp"].length
             ? object["hp"][actor._actorId - 1] : 0;
 
-        return [dxf, dyf, dxp, dyp, xf, yf, xp, yp, wf, hf, wp, hp];
+        return [dxf, dyf, dxp, dyp, wf, hf, wp, hp];
     }
 
     /************************************************************************************/
 
-    Window_Base.prototype.customDrawFace = function(name, sx, sy, sw, sh, dx, dy) {
+    Window_Base.prototype.customDrawFace = function(n, fi, sw, sh, dx, dy) {
         sw = sw || Window_Base._faceWidth;
         sh = sh || Window_Base._faceHeight;
 
-        const bitmap = ImageManager.loadFace(name);
+        const bitmap = ImageManager.loadFace(n);
         const pw = Window_Base._faceWidth;
         const ph = Window_Base._faceHeight;
         sw = Math.min(sw, pw);
         sh = Math.min(sh, ph);
 
-        dx = Math.floor(dx + Math.max(sw - pw, 0) / 2);
-        dy = Math.floor(dy + Math.max(sh - ph, 0) / 2);
+        const sx = fi % 4 * pw + (pw - sw) / 2;
+        const sy = Math.floor(fi / 4) * ph + (ph - sh) / 2;
+
+        dx = Math.floor(dx + Math.max(sw - pw, 0) / 2) - 2;
+        dy = Math.floor(dy + Math.max(sh - ph, 0) / 2) - 4;
         this.contents.blt(bitmap, sx, sy, sw, sh, dx, dy);
     };
 
@@ -194,38 +181,41 @@ StateOverlay.Holders = StateOverlay.Holders || {};
         const [prepend, append, replace] = StateOverlay.findOverlays(actor);
 
         for (let i = 0; i < prepend.length; i++) {
-            const [dxf, dyf, dxp, dyp, xf, yf, xp, yp, wf, hf, wp, hp] = StateOverlay.unpackParameters(actor, prepend[i]);
+            const [dxf, dyf, dxp, dyp, wf, hf, wp, hp] = StateOverlay.unpackParameters(actor, prepend[i]);
             $.Holders.drawFace.call(this, prepend[i]["name"], index, x + dxf, y + dyf, wf || w, hf || h);
         }
         if (replace.length > 0) {
-            const [dxf, dyf, dxp, dyp, xf, yf, xp, yp, wf, hf, wp, hp] = StateOverlay.unpackParameters(actor, replace[replace.length - 1]);
+            const [dxf, dyf, dxp, dyp, wf, hf, wp, hp] = StateOverlay.unpackParameters(actor, replace[replace.length - 1]);
             $.Holders.drawFace.call(this, replace[replace.length - 1]["name"], index, x, y, w, h);
 
             if (replace[replace.length - 1]["mode"] === "combine") {
-                this.customDrawFace(name, xf, yf, wf, hf, x + dxf, y + dyf);
+                this.customDrawFace(name, index, wf || w, hf || h, x + dxf, y + dyf);
             }
         } else {
             $.Holders.drawFace.call(this, name, index, x, y, w, h);
         }
         for (let i = 0; i < append.length; i++) {
-            const [dxf, dyf, dxp, dyp, xf, yf, xp, yp, wf, hf, wp, hp] = StateOverlay.unpackParameters(actor, append[i]);
+            const [dxf, dyf, dxp, dyp, wf, hf, wp, hp] = StateOverlay.unpackParameters(actor, append[i]);
             $.Holders.drawFace.call(this, append[i]["name"], index, x + dxf, y + dyf, wf || w, hf || h);
         }
     };
 
     if (Imported.YEP_BattleStatusWindow) {
-        Window_BattleStatus.prototype.customDrawFace = function(name, sx, sy, sw, sh, dx, dy) {
+        Window_BattleStatus.prototype.customDrawFace = function(n, fi, sw, sh, dx, dy) {
             sw = sw || Window_Base._faceWidth;
             sh = sh || Window_Base._faceHeight;
 
-            const bitmap = ImageManager.loadFace(name);
+            const bitmap = ImageManager.loadFace(n);
             const pw = Window_Base._faceWidth;
             const ph = Window_Base._faceHeight;
             sw = Math.min(sw, pw);
             sh = Math.min(sh, ph);
 
+            const sx = fi % 4 * pw + (pw - sw) / 2;
+            const sy = Math.floor(fi / 4) * ph + (ph - sh) / 2;
+
             dx = Math.floor(dx + Math.max(sw - pw, 0) / 2) - 2;
-            dy = Math.floor(dy + Math.max(sh - ph, 0) / 2) - 4;
+            dy = Math.floor(dy + Math.max(sh - ph, 0) / 2) - 8;
             this._faceContents.bitmap.blt(bitmap, sx, sy, sw, sh, dx, dy);
         };
 
@@ -235,30 +225,43 @@ StateOverlay.Holders = StateOverlay.Holders || {};
             const [prepend, append, replace] = StateOverlay.findOverlays(actor);
 
             for (let i = 0; i < prepend.length; i++) {
-                const [dxf, dyf, dxp, dyp, xf, yf, xp, yp, wf, hf, wp, hp] = StateOverlay.unpackParameters(actor, prepend[i]);
+                const [dxf, dyf, dxp, dyp, wf, hf, wp, hp] = StateOverlay.unpackParameters(actor, prepend[i]);
                 $.Holders.battleDrawFace.call(this, prepend[i]["name"], index, x + dxf, y + dyf, wf || w, hf || h);
             }
             if (replace.length > 0) {
-                const [dxf, dyf, dxp, dyp, xf, yf, xp, yp, wf, hf, wp, hp] = StateOverlay.unpackParameters(actor, replace[replace.length - 1]);
+                const [dxf, dyf, dxp, dyp, wf, hf, wp, hp] = StateOverlay.unpackParameters(actor, replace[replace.length - 1]);
                 $.Holders.battleDrawFace.call(this, replace[replace.length - 1]["name"], index, x, y, w, h);
 
                 if (replace[replace.length - 1]["mode"] === "combine") {
-                    this.customDrawFace(name, xf, yf, wf, hf, x + dxf, y + dyf);
+                    this.customDrawFace(name, index, wf || w, hf || h, x + dxf, y + dyf);
                 }
             } else {
                 $.Holders.battleDrawFace.call(this, name, index, x, y, w, h);
             }
             for (let i = 0; i < append.length; i++) {
-                const [dxf, dyf, dxp, dyp, xf, yf, xp, yp, wf, hf, wp, hp] = StateOverlay.unpackParameters(actor, append[i]);
+                const [dxf, dyf, dxp, dyp, wf, hf, wp, hp] = StateOverlay.unpackParameters(actor, append[i]);
                 $.Holders.battleDrawFace.call(this, append[i]["name"], index, x + dxf, y + dyf, wf || w, hf || h);
             }
         };
     }
 
     if (Imported.Galv_BustMenu) {
-        Window_MenuStatus.prototype.customDrawFace = function(name, index, sx, sy, sw, sh, dx, dy) {
-            const bustName = name + "_" + (index + 1);
-            const bitmap = ImageManager.loadPicture(bustName);
+        Window_MenuStatus.prototype.customDrawFace = function(n, fi, sw, sh, dx, dy) {
+            const bn = n + "_" + (fi + 1);
+            const bitmap = ImageManager.loadPicture(bn);
+
+            let ox = 0;
+            let oy = 0;
+            if (Galv.BM.offsets[bn]) {
+                ox = Galv.BM.offsets[bn][0] || 0;
+                oy = Galv.BM.offsets[bn][1] || 0;
+            }
+
+            sw = sw || this.bustWidth();
+            sh = sh || Galv.BM.bustHeight;
+
+            const sx = bitmap.width / 2 - sw / 2 - ox;
+            const sy = oy;
 
             dx = dx - 1;
             dy = dy + Galv.BM.bust;
@@ -271,21 +274,21 @@ StateOverlay.Holders = StateOverlay.Holders || {};
             const [prepend, append, replace] = StateOverlay.findOverlays(actor);
 
             for (let i = 0; i < prepend.length; i++) {
-                const [dxf, dyf, dxp, dyp, xf, yf, xp, yp, wf, hf, wp, hp] = StateOverlay.unpackParameters(actor, prepend[i]);
+                const [dxf, dyf, dxp, dyp, wf, hf, wp, hp] = StateOverlay.unpackParameters(actor, prepend[i]);
                 $.Holders.bustDrawFace.call(this, prepend[i]["name"], index, x + dxp, y + dyp, wp || w, hp || h);
             }
             if (replace.length > 0) {
-                const [dxf, dyf, dxp, dyp, xf, yf, xp, yp, wf, hf, wp, hp] = StateOverlay.unpackParameters(actor, replace[replace.length - 1]);
+                const [dxf, dyf, dxp, dyp, wf, hf, wp, hp] = StateOverlay.unpackParameters(actor, replace[replace.length - 1]);
                 $.Holders.bustDrawFace.call(this, replace[replace.length - 1]["name"], index, x, y, w, h);
 
                 if (replace[replace.length - 1]["mode"] === "combine") {
-                    this.customDrawFace(name, index, xp, yp, wp, hp, x + dxp, y + dyp);
+                    this.customDrawFace(name, index, wp, hp, x + dxp, y + dyp);
                 }
             } else {
                 $.Holders.bustDrawFace.call(this, name, index, x, y, w, h);
             }
             for (let i = 0; i < append.length; i++) {
-                const [dxf, dyf, dxp, dyp, xf, yf, xp, yp, wf, hf, wp, hp] = StateOverlay.unpackParameters(actor, append[i]);
+                const [dxf, dyf, dxp, dyp, wf, hf, wp, hp] = StateOverlay.unpackParameters(actor, append[i]);
                 $.Holders.bustDrawFace.call(this, append[i]["name"], index, x + dxp, y + dyp, wp || w, hp || h);
             }
         };
