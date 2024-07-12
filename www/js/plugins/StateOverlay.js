@@ -1,6 +1,6 @@
 /*:
  * @author 1d51
- * @version 0.0.8
+ * @version 0.0.9
  * @plugindesc Use custom overlays based on actor states
  * @help
  * ============================================================================
@@ -72,7 +72,10 @@ StateOverlay.Holders = StateOverlay.Holders || {};
                 else if (type === "armor") response = actor.hasArmor($dataArmors[id]);
                 else if (type === "weapon") response = actor.hasWeapon($dataArmors[id]);
                 else if (type === "state") response = actor.isStateAffected(id);
-                else if (type === "contains") response = actor.faceName().includes(text);
+                else if (type === "contains") response = replace.length > 0
+                    ? replace[replace.length - 1]["name"].includes(text)
+                    : actor.faceName().includes(text);
+
                 return inclusive ? response : !response;
             });
 
@@ -158,12 +161,17 @@ StateOverlay.Holders = StateOverlay.Holders || {};
     /************************************************************************************/
 
     Window_Base.prototype.customDrawFace = function(n, fi, sw, sh, dx, dy) {
-        sw = sw || Window_Base._faceWidth;
-        sh = sh || Window_Base._faceHeight;
-
         const bitmap = ImageManager.loadFace(n);
         const pw = Window_Base._faceWidth;
         const ph = Window_Base._faceHeight;
+
+        if (bitmap.width <= 0) {
+            return setTimeout(this.customDrawFace.bind(this, n, fi, sw, sh, dx, dy), 50);
+        }
+
+        sw = sw || Window_Base._faceWidth;
+        sh = sh || Window_Base._faceHeight;
+
         sw = Math.min(sw, pw);
         sh = Math.min(sh, ph);
 
@@ -202,12 +210,17 @@ StateOverlay.Holders = StateOverlay.Holders || {};
 
     if (Imported.YEP_BattleStatusWindow) {
         Window_BattleStatus.prototype.customDrawFace = function(n, fi, sw, sh, dx, dy) {
-            sw = sw || Window_Base._faceWidth;
-            sh = sh || Window_Base._faceHeight;
-
             const bitmap = ImageManager.loadFace(n);
             const pw = Window_Base._faceWidth;
             const ph = Window_Base._faceHeight;
+
+            if (bitmap.width <= 0) {
+                return setTimeout(this.customDrawFace.bind(this, n, fi, sw, sh, dx, dy), 50);
+            }
+
+            sw = sw || Window_Base._faceWidth;
+            sh = sh || Window_Base._faceHeight;
+
             sw = Math.min(sw, pw);
             sh = Math.min(sh, ph);
 
@@ -249,6 +262,10 @@ StateOverlay.Holders = StateOverlay.Holders || {};
         Window_MenuStatus.prototype.customDrawFace = function(n, fi, sw, sh, dx, dy) {
             const bn = n + "_" + (fi + 1);
             const bitmap = ImageManager.loadPicture(bn);
+
+            if (bitmap.width <= 0) {
+                return setTimeout(this.customDrawFace.bind(this, n, fi, sw, sh, dx, dy), 50);
+            }
 
             let ox = 0;
             let oy = 0;
